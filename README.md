@@ -12,9 +12,11 @@ Please don't use this in production, many flaws
 - Registering with Initializer Delegates
 - Working with Generic Services
 - Singletons
+- Caches (kind of)
 
 ## TODO
 - [x] Singletons
 - [x] Generics
 - [ ] Caching (one "real" instantiation, then deep copies)
+- [x] reflection caching
 - [ ] Detect Circular references (lol)
