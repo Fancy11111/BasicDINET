@@ -22,6 +22,15 @@ namespace diTest
 		/// contains pairs of interfaces and concrete objects for singletons
 		/// </summary>
 		private Dictionary<Type, object> singletons { get; set; } = new Dictionary<Type, object>();
+		/// <summary>
+		/// Cache methodInfos for GetServiceInstance to speed up instantiation
+		/// </summary>
+		private Dictionary<Type, MethodInfo> methodCache { get; set; } = new Dictionary<Type, MethodInfo>();
+		/// <summary>
+		/// cache for constructor params to speed up instantiation
+		/// </summary>
+		private Dictionary<Type, object[]> paramCache { get; set; } = new Dictionary<Type, object[]>();
+
 
 		/// <summary>
 		/// Add a service via generic parameters
@@ -138,20 +147,29 @@ namespace diTest
 				{
 					concServiceType = GetServiceType<TInt>();
 				}
-
-				var ctorInfo = concServiceType.GetConstructors()[0];
-				var ctorParams = ctorInfo.GetParameters();
-				object[] paramArr = { };
-				if (ctorParams != null && ctorParams.Any())
+				var tryGetRes = TryGetParams(intType, out object[] paramArr);
+				if(!tryGetRes)
 				{
-					foreach (var ctorParam in ctorParams)
+					paramArr = new object[]{ };
+					var ctorInfo = concServiceType.GetConstructors()[0];
+					var ctorParams = ctorInfo.GetParameters();
+					if (ctorParams != null && ctorParams.Any())
 					{
-						var ctorType = ctorParam.ParameterType.GetTypeInfo();
-						MethodInfo method = GetType().GetMethod("GetServiceInstance")
-							.MakeGenericMethod(new Type[] { ctorType });
-						object param = method.Invoke(this, new object[] { });
-						paramArr = paramArr.Append(param).ToArray();
+						foreach (var ctorParam in ctorParams)
+						{
+							var ctorType = ctorParam.ParameterType.GetTypeInfo();
+							tryGetRes = TryGetMethodInfo(ctorType, out MethodInfo method);
+							if(!tryGetRes)
+							{
+								method = GetType().GetMethod("GetServiceInstance")
+								.MakeGenericMethod(new Type[] { ctorType });
+								methodCache.Add(ctorType, method);
+							}
+							object param = method.Invoke(this, new object[] { });
+							paramArr = paramArr.Append(param).ToArray();
+						}
 					}
+					paramCache.Add(intType, paramArr);
 				}
 				instance = (TInt)Activator.CreateInstance(concServiceType, paramArr);
 			}
@@ -271,5 +289,21 @@ namespace diTest
 			var res = singletons.TryGetValue(intType, out object instance);
 			return res && instance != null;
 		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="intType"></param>
+		/// <returns></returns>
+		private bool TryGetParams(Type intType, out object[] paramArr) => 
+			paramCache.TryGetValue(intType, out paramArr);
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="intType"></param>
+		/// <returns></returns>
+		private bool TryGetMethodInfo(Type intType, out MethodInfo method) =>
+			methodCache.TryGetValue(intType, out method);
 	}
 }
