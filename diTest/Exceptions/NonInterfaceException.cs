@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace diTest
+namespace diTest.Exceptions
 {
 	[System.Serializable]
 	public class NonInterfaceException : Exception
