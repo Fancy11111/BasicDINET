@@ -10,6 +10,7 @@ Please don't use this in production, many flaws
 - Register services and retrieve Instances
 - Dependencies of services are resolved (if dependency is registered aswell)
 - Registering with Initializer Delegates
+- Working with Generic Services
 
 ## TODO
 - [ ] Singletons
