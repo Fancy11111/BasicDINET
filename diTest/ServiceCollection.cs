@@ -10,17 +10,51 @@ namespace diTest
 {
 	public class ServiceCollection
 	{
+		/// <summary>
+		/// Contains all pairs of interfaces and implementations
+		/// </summary>
 		private Dictionary<Type, Type> coll { get; set; } = new Dictionary<Type, Type>();
+		/// <summary>
+		/// contains pairs of interfaces and initializers for types that are registered with initializers
+		/// </summary>
 		private Dictionary<Type, Func<object>> initializers { get; set; } = new Dictionary<Type, Func<object>>();
+		/// <summary>
+		/// contains pairs of interfaces and concrete objects for singletons
+		/// </summary>
 		private Dictionary<Type, object> singletons { get; set; } = new Dictionary<Type, object>();
 
-		public ServiceCollection AddService<TInt, TConc>() where TInt : class where TConc : class, TInt
+		/// <summary>
+		/// Add a service via generic parameters
+		/// </summary>
+		/// <typeparam name="TInt">Interfacetype</typeparam>
+		/// <typeparam name="TConc">Implementationtype</typeparam>
+		/// <exception cref="NonInterfaceException">When TInt is not an Interface</exception>
+		/// <returns>this object for fluent api</returns>
+		public ServiceCollection AddService<TInt, TConc>() where TInt : class where TConc : class, TInt => 
+			AddService(typeof(TInt), typeof(TConc));
+
+		/// <summary>
+		/// Add a service via generic parameters with an initializer Func
+		/// </summary>
+		/// <param name="initializer">Func that returns a <see cref="TConc"/>, is used to instanciate on request</param>
+		/// <typeparam name="TInt">Interfacetype</typeparam>
+		/// <typeparam name="TConc">Implementationtype</typeparam>
+		/// <exception cref="NonInterfaceException">When TInt is not an Interface</exception>
+		/// <returns>this object for fluent api</returns>
+		public ServiceCollection AddService<TInt, TConc>(Func<TConc> initializer) where TInt : class where TConc : class, TInt
 		{
-			if (!typeof(TInt).IsInterface) throw new NonInterfaceException(typeof(TInt).Name);
-			coll.Add(typeof(TInt), typeof(TConc));
+			AddService(typeof(TInt), typeof(TConc));
+			initializers.Add(typeof(TInt), initializer);
 			return this;
 		}
 
+		/// <summary>
+		/// Add a service via type parameters
+		/// </summary>
+		/// <param name="intType">Interfacetype</param>
+		/// <param name="concType">Implementationtype</param>
+		/// <exception cref="NonInterfaceException">When TInt is not an Interface</exception>
+		/// <returns>this object for fluent api</returns>
 		public ServiceCollection AddService(Type intType, Type concType)
 		{
 			if (!intType.IsInterface) throw new NonInterfaceException(intType.Name);
@@ -28,14 +62,12 @@ namespace diTest
 			return this;
 		}
 
-		public ServiceCollection AddService<TInt, TConc>(Func<TConc> initializer) where TInt : class where TConc : class, TInt
-		{
-			if (!typeof(TInt).IsInterface) throw new NonInterfaceException(typeof(TInt).Name);
-			coll.Add(typeof(TInt), typeof(TConc));
-			initializers.Add(typeof(TInt), initializer);
-			return this;
-		}
-
+		/// <summary>
+		/// Add a service as a singleton via generic types
+		/// </summary>
+		/// <typeparam name="TInt"></typeparam>
+		/// <typeparam name="TConc"></typeparam>
+		/// <returns></returns>
 		public ServiceCollection AddSingleton<TInt, TConc>() where TInt : class where TConc : class, TInt
 		{
 			AddService<TInt, TConc>();
@@ -43,6 +75,13 @@ namespace diTest
 			return this;
 		}
 
+		/// <summary>
+		/// Add a service as a singleton via type parameters
+		/// </summary>
+		/// <param name="intType">Interfacetype</param>
+		/// <param name="concType">Implementationtype</param>
+		/// <exception cref="NonInterfaceException">When TInt is not an Interface</exception>
+		/// <returns>this object for fluent api</returns>
 		public ServiceCollection AddSingleton(Type intType, Type concType)
 		{
 			AddService(intType, concType);
@@ -50,6 +89,14 @@ namespace diTest
 			return this;
 		}
 
+		/// <summary>
+		/// Add a service as a singleton via generic parameters with an initializer Func
+		/// </summary>
+		/// <param name="initializer">Func that returns a <see cref="TConc"/>, is used to instanciate on request</param>
+		/// <typeparam name="TInt">Interfacetype</typeparam>
+		/// <typeparam name="TConc">Implementationtype</typeparam>
+		/// <exception cref="NonInterfaceException">When TInt is not an Interface</exception>
+		/// <returns>this object for fluent api</returns>
 		public ServiceCollection AddSingleton<TInt, TConc>(Func<TConc> initializer) where TInt : class where TConc : class, TInt
 		{
 			AddService<TInt, TConc>(initializer);
@@ -57,6 +104,11 @@ namespace diTest
 			return this;
 		}
 
+		/// <summary>
+		/// retrieve a serviceinstance via generic type
+		/// </summary>
+		/// <typeparam name="TInt">The interface used to retrieve the concrete implementation type</typeparam>
+		/// <returns>An instance of a concrete implementation belonging to <typeparam name="TInt"/></returns>
 		public TInt GetServiceInstance<TInt>() where TInt : class
 		{
 			TInt instance;
@@ -112,26 +164,56 @@ namespace diTest
 			return instance;
 		}
 
-		private Type GetServiceType<TInt>() where TInt : class
-		{
-			return coll.GetValueOrDefault(typeof(TInt));
-		}
+		/// <summary>
+		/// Get type of concrete implementation for Interface via typeparam
+		/// </summary>
+		/// <typeparam name="TInt">Generic type param as the interface to search for</typeparam>
+		/// <returns>Concrete Type or null</returns>
+		private Type GetServiceType<TInt>() where TInt : class => 
+			GetServiceType(typeof(TInt));
 
-		private Type GetServiceType(Type intType)
-		{
-			return coll.GetValueOrDefault(intType);
-		}
+		/// <summary>
+		/// Get type of concrete implementation for Interface via param
+		/// </summary>
+		/// <param name="intType">Generic type param as the interface to search for</param>
+		/// <returns>concrete Type or null</returns>
+		private Type GetServiceType(Type intType) => 
+			coll.GetValueOrDefault(intType);
 
-		private Func<object> GetInitializer<TInt>()
-		{
-			return initializers.TryGetValue(typeof(TInt), out Func<object> initializer) ? initializer : null;
-		}
+		/// <summary>
+		/// Get initializer or null
+		/// </summary>
+		/// <typeparam name="TInt"></typeparam>
+		/// <returns>initializer func or null</returns>
+		private Func<object> GetInitializer<TInt>() => 
+			GetInitializer(typeof(TInt));
 
+		/// <summary>
+		/// Get initializer or null
+		/// </summary>
+		/// <typeparam name="TInt"></typeparam>
+		/// <returns>initializer func or null</returns>
+		private Func<object> GetInitializer(Type intType) =>
+			initializers.TryGetValue(intType, out Func<object> initializer) ? initializer : null;
+
+		/// <summary>
+		/// Register singleton with null as value
+		/// </summary>
+		/// <param name="intType"></param>
+		/// <exception cref="SingletonAlreadyRegisteredException">when singleton is already registered</exception>
 		private void RegisterSingleton(Type intType)
 		{
+			if (singletons.ContainsKey(intType)) throw new SingletonAlreadyRegisteredException(intType.Name);
 			singletons.Add(intType, null);
 		}
 
+		/// <summary>
+		/// Initialize singleton
+		/// </summary>
+		/// <param name="intType"></param>
+		/// <param name="singleton"></param>
+		/// <exception cref="SingletonNotRegisteredException">when not registered as singleton</exception>
+		/// <exception cref="SingletonOverwriteException">when already initialized singleton</exception>
 		private void InitializeSingleton(Type intType, object singleton)
 		{
 			if(singletons.ContainsKey(intType) && singletons[intType] == null)
@@ -148,11 +230,22 @@ namespace diTest
 			}
 		}
 
+		/// <summary>
+		/// Retrieve singleton
+		/// </summary>
+		/// <param name="intType"></param>
+		/// <returns></returns>
+		/// <exception cref="SingletonNotRegisteredException">when not registered as singleton</exception>
+		/// <exception cref="SingletonNotInitializedException">when not initialized</exception>
 		private object GetSingleton(Type intType)
 		{
 			if (singletons.ContainsKey(intType) && singletons[intType] != null)
 			{
 				return singletons[intType];
+			}
+			else if (!singletons.ContainsKey(intType))
+			{
+				throw new SingletonNotRegisteredException(intType.Name);
 			}
 			else
 			{
@@ -160,11 +253,19 @@ namespace diTest
 			}
 		}
 
-		private bool IsSingleton(Type intType)
-		{
-			return singletons.ContainsKey(intType);
-		}
+		/// <summary>
+		/// check if type is registered as singleton
+		/// </summary>
+		/// <param name="intType"></param>
+		/// <returns></returns>
+		private bool IsSingleton(Type intType) => 
+			singletons.ContainsKey(intType);
 
+		/// <summary>
+		/// check if type is registered and initialized as singleton
+		/// </summary>
+		/// <param name="intType"></param>
+		/// <returns></returns>
 		private bool IsRegisteredInitializedSingleton(Type intType)
 		{
 			var res = singletons.TryGetValue(intType, out object instance);
