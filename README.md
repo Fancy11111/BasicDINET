@@ -11,8 +11,10 @@ Please don't use this in production, many flaws
 - Dependencies of services are resolved (if dependency is registered aswell)
 - Registering with Initializer Delegates
 - Working with Generic Services
+- Singletons
 
 ## TODO
-- [ ] Singletons
-- [ ] Caching (one "real" instantiation, then copies)
+- [x] Singletons
+- [x] Generics
+- [ ] Caching (one "real" instantiation, then deep copies)
 - [ ] Detect Circular references (lol)
