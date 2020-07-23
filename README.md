@@ -1,7 +1,9 @@
 # Basic dependency injection framework for .NET Core
 
 This is a prototype for a DI Framework (+ Service Locator kinda).
+
 Big Inspiration from ASP.NET Core's DI with Services
+
 Please don't use this in production, many flaws
 
 ## Features
