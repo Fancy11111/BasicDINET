@@ -4,7 +4,7 @@ This is a prototype for a DI Framework (+ Service Locator kinda).
 
 Big Inspiration from ASP.NET Core's DI with Services
 
-Please don't use this in production, many flaws
+Please don't use this POS (Piece of Software) in production, many flaws
 
 ## Features
 - Register services and retrieve Instances
